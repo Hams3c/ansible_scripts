@@ -1,0 +1,62 @@
+# designed to run on a box which
+# has hcxtools installed
+# eg:  kali ilnux-
+
+#
+# you'll need to add this to /etc/ansible/hosts
+# [pwnagotchi]
+# 10.0.0.2
+
+---
+
+- hosts: localhost
+  vars:
+    p_dir: ~/pwnagotchi_handshakes
+
+  tasks:
+  - name: Creating '{{p_dir}}'
+    ansible.builtin.file:
+      path: '{{p_dir}}'
+      state: directory
+      mode: '0755'
+
+#  - name: Git checkout hcxtools
+#    ansible.builtin.git:
+#      repo: 'https://github.com/ZerBea/hcxtools.git'
+#      dest: '{{p_dir}}/hcxtools'
+#      clone: yes
+#      update: yes
+
+  - name: Git checkout password lists
+    ansible.builtin.git:
+      repo: 'https://github.com/josuamarcelc/common-password-list.git'
+      dest: '{{p_dir}}/password_lists'
+      clone: yes
+      update: yes
+
+#  - name: Make binaries
+#    shell:
+#      cmd: make; make
+
+- hosts: pwnagotchi
+  vars:
+    p_dir: ~/pwnagotchi_handshakes
+    timestamp: "{{ '%Y-%m-%d' | strftime }}"
+
+  tasks:
+  - name: Copy handshakes from pwnagotchi
+    synchronize:
+      src: /home/pi/handshakes/
+      dest: "{{p_dir}}/{{ timestamp }}"
+      mode: pull
+      recursive: yes
+
+- hosts: localhost
+  vars:
+    p_dir: ~/pwnagotchi_handshakes
+    timestamp: "{{ '%Y-%m-%d' | strftime }}"
+
+  tasks:
+    - name: Crack PCAP files
+      shell:
+        cmd: 'cd {{p_dir}}/{{ timestamp }}; hcxpcapngtool *.pcap -o candidates.hc22000 -E {{p_dir}}/password_lists/rockyou.txt/rockyou_1.txt'
