@@ -15,6 +15,16 @@
     dir_hashcat_utils: ~/github/hashcat-utils
 
   tasks:
+  - name: Install make
+    become: yes
+    ansible.builtin.apt:
+      name: make
+
+  - name: Install gcc
+    become: yes
+    ansible.builtin.apt:
+      name: gcc
+
   - name: Creating '{{dir_pwnagotchi}}'
     ansible.builtin.file:
       path: '{{dir_pwnagotchi}}'
