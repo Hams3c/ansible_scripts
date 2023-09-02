@@ -1,7 +1,13 @@
-# designed to run on a box which
-# has hcxtools installed
-# eg:  kali ilnux-
+# required packages
+#   hxtools
+#   hashcat
 
+# Preparation
+#
+# update the new network (USB Ethernet/RNDIS Gadget) with the following
+# ip: 10.0.0.1
+# subnet mask: 255.255.255.0
+# gateway: 10.0.0.1
 #
 # you'll need to add this to /etc/ansible/hosts
 # [pwnagotchi]
