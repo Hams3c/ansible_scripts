@@ -1,11 +1,9 @@
-# ansible_scripts repo
+# pwnagotchi.yml
 
-## pwnagotchi.yml
-
-### Overview
+## Overview
 This file copies pcaps from a pwnagotchi to the user's home directory, making directories as necessary.  Required directories and tools are downloaded and installed. 
 
-### Ansible Configuration
+## Ansible Configuration
 add this to to `/etc/ansible/hosts`
 
 ```
@@ -13,7 +11,7 @@ add this to to `/etc/ansible/hosts`
 10.0.0.2
 ```
 
-### Pwnagotchi Configuration
+## Pwnagotchi Configuration
 update the new network (USB Ethernet/RNDIS Gadget) with the following:
 
 ```
