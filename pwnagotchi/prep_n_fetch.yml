@@ -1,7 +1,3 @@
-# required packages
-#   hxtools
-#   hashcat
-
 # Preparation
 #
 # update the new network (USB Ethernet/RNDIS Gadget) with the following
@@ -30,6 +26,11 @@
     become: yes
     ansible.builtin.apt:
       name: gcc
+
+  - name: Install hashcat
+    become: yes
+    ansible.builtin.apt:
+      name: hashcat
 
   - name: Creating '{{dir_pwnagotchi}}'
     ansible.builtin.file:
@@ -71,18 +72,3 @@
       mode: pull
       recursive: yes
 
-
-- hosts: localhost
-  vars:
-    dir_pwnagotchi: ~/pwnagotchi_handshakes
-    dir_hashcat_utils: ~/github/hashcat-utils
-    timestamp: "{{ '%Y-%m-%d' | strftime }}"
-
-  tasks:
-    - name: Make hccapx file from handshake
-      shell:
-        cmd: '{{dir_hashcat_utils}}/bin/cap2hccapx.bin {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.pcap {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.hccapx'
-
-    - name: Start bruteforcing using hashcat
-      shell:
-        cmd: 'hashcat -m 2500 --force -a 3 {{dir_pwnagotchi}}/{{timestamp}}/JesusSaves_40e1e441f2b3.hccapx'
